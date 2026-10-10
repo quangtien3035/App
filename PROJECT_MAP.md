@@ -74,7 +74,7 @@ App/
 | `HeartMonitorController.ts` | Điều phối luồng sức khỏe chính: tải cài đặt, subscribe dữ liệu, cập nhật Zustand, so ngưỡng, lưu cảnh báo và khởi chạy chuỗi SOS. |
 | `healthService.ts` | Nghe Firebase path `health_data`; chuyển snapshot thành `HealthData`; dùng thời gian nhận ở điện thoại. |
 | `historyService.ts` | Firebase path `health_history`: `saveHealthHistory`, `subscribeHistory`, `clearAllHistory`, `deleteOldHistory`. |
-| `alertService.ts` | Firebase path `health_alerts`: lưu một cảnh báo và subscribe danh sách cảnh báo. |
+| `alertService.ts` | Firebase path `health_alerts`: lưu một cảnh báo và subscribe danh sách cảnh báo. `AlertLog.tsx` gọi `subscribeAlerts`, nhưng hiện chưa thấy màn hình nào import/render `AlertLog`. |
 | `authService.ts` | Firebase email/password, guest, logout; Google đang bị vô hiệu hóa; Apple auth trả về credential nhưng chưa thấy flow Firebase credential trong file. |
 | `settingsService.ts` | Lưu ngưỡng BPM/SpO₂, hồ sơ và cấu hình tự xóa qua AsyncStorage. |
 | `useHealthStore.ts` | Shared state cho chỉ số, ngưỡng, kết nối, hồ sơ, tự xóa và user auth. |
@@ -162,10 +162,10 @@ SettingsScreen
 
 ## 5. Dữ liệu và các phụ thuộc
 
-- Firebase path đã thấy trong code: `health_data`, `health_history`, `health_alerts`, `.info/connected`.
+- Firebase path đã thấy trong code: `health_data`, `health_history`, `health_alerts`, `.info/connected`. Cấu hình Firebase client nằm trong `src/config/firebase.ts`; cấu hình client không thay thế cho việc thiết lập Firebase Security Rules, mà các rules chưa có trong repository để kiểm tra.
 - `HeartMonitorController` phụ thuộc `healthService`, `historyService`, `alertService`, `settingsService`, Zustand store, kiểu `HealthData`, Expo Location và API Vibration/Linking.
-- `DashboardScreen` phụ thuộc Zustand, controller, ThemeContext và biểu đồ.
-- `HistoryScreen` phụ thuộc `historyService`, `HistoryRecord`, ThemeContext và thư viện chart/print/share.
+- `DashboardScreen` phụ thuộc Zustand, controller, ThemeContext và biểu đồ; màn hình hiện tự thực hiện một phần logic phân loại chỉ số bằng `useMemo`, không gọi `utils/healthAnalysis.ts` trong các import đã kiểm tra.
+- `HistoryScreen` phụ thuộc `historyService`, `HistoryRecord`, ThemeContext và thư viện chart/print/share; nó định nghĩa hàm xuất PDF riêng, không thấy import `reportService.ts`.
 - `SettingsScreen` phụ thuộc settings/history/auth services, Zustand, controller và ThemeContext.
 - `AppNavigator` phụ thuộc screens, Zustand, ThemeContext, Firebase Auth và config.
 - `README.md` ở root chỉ có 5 bytes; `HealthyMonitor-main/CLAUDE.md` rất ngắn; `AGENTS.md` chỉ hướng dẫn tham khảo tài liệu Expo SDK v57 trước khi sửa code. Không có tài liệu giải thích kiến trúc hữu ích đi kèm.
@@ -180,6 +180,8 @@ SettingsScreen
 6. **Đăng nhập Apple:** `loginWithApple()` lấy credential từ Expo Apple Authentication, nhưng trong file không thấy trao đổi credential đó với Firebase Auth. Cần kiểm tra luồng giao diện và yêu cầu triển khai.
 7. **Đăng nhập khách:** `loginAsGuest()` dùng Firebase anonymous auth, nhưng `AppNavigator` dựa trên `onAuthStateChanged`; cần xác minh cài đặt Firebase cho phép anonymous sign-in.
 8. **Cài đặt SDK mới:** package khai báo Expo SDK 57 và `AGENTS.md` yêu cầu đọc docs đúng phiên bản. Chưa chạy cài dependency/build/test, nên chưa xác nhận app chạy được trên máy hoặc Expo Go.
+9. **Component có thể chưa được sử dụng:** `AlertLog.tsx`, `ConnectionStatus.tsx`, `DeviceDiagnosticCard.tsx`, `MeasurementStatus.tsx`, `MetricCard.tsx` và `SmartConnectionCard.tsx` đều export component, nhưng trong các screen/navigator đã khảo sát chưa thấy import/render các component này. Cần kiểm tra trước khi coi chúng là một phần đang hiển thị của app.
+10. **Lưu lịch sử từ dữ liệu realtime:** `saveHealthHistory` được import vào `HeartMonitorController.ts`, song phần `setInterval` gọi lưu định kỳ đã bị comment; trong các file logic đã khảo sát chưa thấy call site đang hoạt động. Chưa thể khẳng định lịch sử được ghi tự động từ luồng monitor hiện tại.
 
 ## 7. Thứ tự học đề xuất
 
